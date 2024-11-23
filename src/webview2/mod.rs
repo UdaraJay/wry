@@ -1041,10 +1041,15 @@ impl InnerWebView {
     let raw = Box::into_raw(boxed2);
 
     let res = PostMessageW(hwnd, *EXEC_MSG_ID, WPARAM(raw as _), LPARAM(0));
-    assert!(
-      res.is_ok(),
-      "PostMessage failed ; is the messages queue full?"
-    );
+
+    #[cfg(any(debug_assertions, feature = "tracing"))]
+    if res.is_err() {
+      let error_code = windows::Win32::Foundation::GetLastError();
+      #[cfg(feature = "tracing")]
+      tracing::error!("PostMessage failed ; is the messages queue full? Error code {error_code:?}");
+      #[cfg(debug_assertions)]
+      eprintln!("PostMessage failed ; is the messages queue full? {error_code:?}");
+    }
   }
 
   unsafe extern "system" fn main_thread_dispatcher_proc(
