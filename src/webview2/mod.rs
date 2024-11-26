@@ -1040,15 +1040,19 @@ impl InnerWebView {
 
     let raw = Box::into_raw(boxed2);
 
-    let res = PostMessageW(hwnd, *EXEC_MSG_ID, WPARAM(raw as _), LPARAM(0));
+    let _res = PostMessageW(hwnd, *EXEC_MSG_ID, WPARAM(raw as _), LPARAM(0));
 
     #[cfg(any(debug_assertions, feature = "tracing"))]
-    if res.is_err() {
-      let error_code = windows::Win32::Foundation::GetLastError();
+    if let Err(err) = _res {
+      let msg = format!(
+        "PostMessage failed ; is the messages queue full? Error code {} - {}",
+        err.code(),
+        err.message()
+      );
       #[cfg(feature = "tracing")]
-      tracing::error!("PostMessage failed ; is the messages queue full? Error code {error_code:?}");
+      tracing::error!("{}", &msg);
       #[cfg(debug_assertions)]
-      eprintln!("PostMessage failed ; is the messages queue full? {error_code:?}");
+      eprintln!("{}", msg);
     }
   }
 
